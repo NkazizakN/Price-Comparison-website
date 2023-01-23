@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Comparison</title>
+    <script src="https://unpkg.com/vue"></script>
+    <link rel="stylesheet" href="styles.css">
+    <!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+    <!-- <script src="../JAVASCRIPT/client.js"></script> -->
+</head>
+<body>
+    <div id="tag">
+        <h1>UNIVERSITY COMPARISON WEBSITE</h1>
+    </div>
+    <div id="app" >
+        <div v-show="allcourses" id="search_div">
+            <!-- <input type="text" id = "searchbar">
+            <input type="button" value = "SEARCH" @click=""> -->
+
+            <strong>Search</strong>
+            <input type="text" v-model="search_term" id="search_bar" style="font-size: 25px">
+            <input type="button" id="search_button" value = "SEARCH" @click="paramsearch()">
+        </div>
+        <div id = "cour_ses" v-show="allcourses" v-for="d in finalDb">
+           <h2>Subject :  {{d.subject}}</h2>
+           <p>University : {{d.uni_name}}</p>
+           <p>Location : {{d.location}}</p>
+           <p>Fees : {{d.fees}}</p>
+           <input id = "comparebt" type="button" value="Compare" @click="compareAll(d)">
+        </div>
+        <div id = "cour_ses" v-show="search_cour" v-for="d in searched">
+            <h2>Subject :  {{d.subject}}</h2>
+            <p>University : {{d.uni_name}}</p>
+            <p>Location : {{d.location}}</p>
+            <p>Fees : {{d.fees}}</p>
+            <input id = "comparebt" type="button" value="Compare" @click="compareAll(d)">
+         </div>
+
+        <div v-show="compare">
+            <input id="goback" type="button" value="GO BACK" @click="goback()">
+        </div>
+        <div v-for="c in similarArr" v-show="compare" id="comp_cour_ses">
+            <h1>Subject :  {{c.subject}}</h1>
+            <p>University : {{c.uni_name}}</p>
+            <p>Location : {{c.location}}</p>
+            <p>Description : {{c.description}}</p>
+            <p>Link : {{c.url}}</p>
+            <p>Type : {{c.type}}</p>
+            <h2>Fees : {{c.fees}}</h2>
+            <!-- <input id = "comparebt" type="button" value="Compare" @click="compareAll(d)"> -->
+         </div>
+
+    </div>
+        
+
+</body>
+<script>
+
+
+let deg=[];
+    let uni=[];
+    let dbcom=[];
+    let combined = [];
+    window.onload = function ()
+    {
+        fetch1();
+        fetch2();
+        fetch3();
+        setTimeout(combineAll,1000);
+    }
+   
+    function  fetch1 ()
+    {
+        fetch('http://localhost:8080/university')
+        .then(res => res.json())
+        .then(data => uni = data)
+        .catch(err => console.log(err.message))
+    }
+
+    function fetch2  ()
+    {
+        fetch('http://localhost:8080/degrees')
+        .then(res => res.json())
+        .then(data => deg = data)
+        .catch(err => console.log(err.message))
+    }
+    function fetch3 ()
+    {
+        fetch('http://localhost:8080/dbcom')
+        .then(res => res.json())
+        .then(data => dbcom = data)
+        .catch(err => console.log(err.message))
+    }
+    function combineAll()
+    {
+        for(let i=0; i< dbcom.length; i++)
+        {
+            var subject;
+            var description;
+            var type;
+            var url;
+            var fees;
+            var location;
+            var uni_name;
+
+            for(var j=0; j< deg.length;j++)
+            {
+                if(dbcom[i].degree_id == deg[j].id)
+                {
+                    subject = deg[j].subject;
+                    description = deg[j].description;
+                    type = deg[j].type;
+                }
+            }
+            for(var k=0; k< uni.length; k++)
+            {
+                if(dbcom[i].university_id == uni[k].id)
+                {
+                    uni_name = uni[k].name;
+                    location = uni[k].location;
+                }
+                url = dbcom[i].url;
+                fees = dbcom[i].fees;
+            }
+            let obj = new Object();
+            obj.subject = subject;
+            obj.description = description;
+            obj.type = type;
+            obj.url = url;
+            obj.fees = fees;
+            obj.location = location;
+            obj.uni_name = uni_name;
+            combined.push(obj);
+
+
+        }
+    }
+
+    let app1 = new Vue({
+        el : '#app',
+        data :{
+            finalDb : combined,
+            similarArr : [],
+            allcourses : true,
+            compare : false,
+            search_cour : false,
+            search_term : "",
+            searched : []
+        },//end of data
+        methods :{
+            compareAll(obj)
+            {
+                this.compareCourses(obj);
+                this.compare = true;
+                this.allcourses = false;
+                this.search_cour = false;
+            },
+            compareCourses(obj)
+            {
+                this.similarArr = [];
+                let mycourse = obj.subject;
+                if(obj.uni_name == "Goldsmith")
+                {
+                    let myArr = mycourse.split(") ");
+                    mycourse = myArr[1];
+                    myArr = mycourse.split(" ");
+                    mycourse = myArr[0];
+                    //console.log(course);
+                }
+                if(obj.uni_name == "WestMinster")
+                {
+                    let myArr = mycourse.split(" ");
+                    mycourse = myArr[0];
+                   // console.log(course);
+                }
+                console.log(mycourse);
+                for(let i=0; i<this.finalDb.length; i++)
+                {
+                    if(this.finalDb[i].subject.toLowerCase().includes(mycourse.toLowerCase()))
+                    {
+                        this.similarArr.push(this.finalDb[i]);
+                    }
+                }
+            },//end of compareCourses
+            goback()
+            {
+                this.compare = false;
+                this.allcourses = true;
+                this.search_cour = false;
+                this.search_term = "";
+            },
+            paramsearch(){
+                this.searched = [];
+                this.compare = false;
+                this.allcourses = false;
+                this.search_cour = true;
+                if(this.search_term == "")
+                {
+                    this.compare = false;
+                this.allcourses = true;
+                this.search_cour = false;
+                }
+                for(let i=0; i<this.finalDb.length; i++)
+                {
+                    if(this.finalDb[i].subject.toLowerCase().includes(this.search_term.toLowerCase()))
+                    {
+                        this.searched.push(this.finalDb[i]);
+                    }
+                }  
+            }
+        }//end of methods
+
+
+    })//end of vue
+    
+
+</script>
+
+</html>
